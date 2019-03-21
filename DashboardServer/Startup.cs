@@ -10,9 +10,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 
-namespace DashboardServer {
-    public class Startup {
-        public Startup(IConfiguration configuration, IHostingEnvironment hostingEnvironment) {
+namespace DashboardServer
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration, IHostingEnvironment hostingEnvironment)
+        {
             Configuration = configuration;
             FileProvider = hostingEnvironment.ContentRootFileProvider;
             DashboardExportSettings.CompatibilityMode = DashboardExportCompatibilityMode.Restricted;
@@ -22,10 +25,12 @@ namespace DashboardServer {
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services) {
+        public void ConfigureServices(IServiceCollection services)
+        {
             services
                 .AddMvc()
-                .AddDefaultDashboardController((configurator, serviceProvider)  => {
+                .AddDefaultDashboardController((configurator, serviceProvider) =>
+                {
                     configurator.SetConnectionStringsProvider(new DashboardConnectionStringsProvider(Configuration));
 
                     DashboardFileStorage dashboardFileStorage = new DashboardFileStorage(FileProvider.GetFileInfo("Data/Dashboards").PhysicalPath);
@@ -56,28 +61,39 @@ namespace DashboardServer {
 
                     configurator.SetDataSourceStorage(dataSourceStorage);
 
-                    configurator.DataLoading += (s, e) => {
-                        if(e.DataSourceName == "Object Data Source") {
+                    configurator.DataLoading += (s, e) =>
+                    {
+                        if (e.DataSourceName == "Object Data Source")
+                        {
                             e.Data = Invoices.CreateData();
                         }
                     };
                 });
 
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAnyOrigin", builder => { builder.AllowAnyOrigin(); });
+            });
             services.AddDevExpressControls(options => options.Resources = ResourcesType.ThirdParty | ResourcesType.DevExtreme);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
             app.UseDevExpressControls();
-            if(env.IsDevelopment()) {
+            if (env.IsDevelopment())
+            {
                 app.UseDeveloperExceptionPage();
             }
-            else {
+            else
+            {
                 app.UseExceptionHandler("/Home/Error");
             }
             app.UseStaticFiles();
-            app.UseMvc(routes => {
-                routes.MapDashboardRoute();
+            app.UseCors("AllowAnyOrigin");
+            app.UseMvc(routes =>
+            {
+                routes.MapDashboardRoute("api/dashboard");
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
